@@ -4,12 +4,24 @@ import re
 import tensorflow as tf
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
 import pickle
 
-tokens_path = 'model/DNN_tokens1.pickle'
-assert os.path.exists(tokens_path), "Token file path does not exist"
-with open(tokens_path, 'rb') as handle:
-    tokenizer = pickle.load(handle)
+# Preparing the tokenizer
+sentences = ["Your sentences", "Another sentence"]  # Change this with your sentences
+tokenizer = Tokenizer(num_words=5000, oov_token='OOV')
+tokenizer.fit_on_texts(sentences)
+
+# Saving the tokenizer
+with open('tokenizer.pickle', 'wb') as handle:
+    pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+# Now suppose we're in another script and we load the tokenizer
+with open('tokenizer.pickle', 'rb') as handle:
+    loaded_tokenizer = pickle.load(handle)
+
+# Print the type to make sure it's the correct one
+print(type(loaded_tokenizer))
 
 factory = StemmerFactory()  
 stemmer = factory.create_stemmer()
@@ -40,6 +52,9 @@ def preprocess_text(text):
 def predict_model_dnn(text):
     maxlen = 1000  # Adjust this to match the input shape your model expects
     X = preprocess_text(text)
-    X_pad = tf.keras.preprocessing.sequence.pad_sequences(tokenizer.texts_to_sequences([X]), maxlen=maxlen, dtype='float32')
+    X_pad = pad_sequences(loaded_tokenizer.texts_to_sequences([X]), maxlen=maxlen, dtype='float32')
     output = model.predict(X_pad)
     return output
+
+# Test the prediction function
+print(predict_model_dnn("Your test sentence"))
